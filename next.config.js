@@ -54,15 +54,11 @@ const securityHeaders = [
   },
 ]
 
-const nextExportConfig = {
-  output: 'export',
-}
-
 /**
  * @type {import('next/dist/next-server/server/config').NextConfig}
  **/
 module.exports = () => {
-  const plugins = [withContentlayer, withBundleAnalyzer, nextExportConfig]
+  const plugins = [withContentlayer, withBundleAnalyzer]
   return plugins.reduce((acc, next) => next(acc), {
     reactStrictMode: true,
     pageExtensions: ['ts', 'tsx', 'js', 'jsx', 'md', 'mdx'],
@@ -70,7 +66,9 @@ module.exports = () => {
       dirs: ['app', 'components', 'layouts', 'scripts'],
     },
     basePath: '/coffee-meet.github.io',
+    output: 'export',
     images: {
+      unoptimized: true,
       remotePatterns: [
         {
           protocol: 'https',
@@ -78,14 +76,14 @@ module.exports = () => {
         },
       ],
     },
-    async headers() {
-      return [
-        {
-          source: '/(.*)',
-          headers: securityHeaders,
-        },
-      ]
-    },
+    // async headers() {
+    //   return [
+    //     {
+    //       source: '/(.*)',
+    //       headers: securityHeaders,
+    //     },
+    //   ]
+    // },
     webpack: (config, options) => {
       config.module.rules.push({
         test: /\.svg$/,
