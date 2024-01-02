@@ -54,19 +54,22 @@ const securityHeaders = [
   },
 ]
 
+const nextExportConfig = {
+  output: 'export',
+}
+
 /**
  * @type {import('next/dist/next-server/server/config').NextConfig}
  **/
 module.exports = () => {
-  const plugins = [withContentlayer, withBundleAnalyzer]
+  const plugins = [withContentlayer, withBundleAnalyzer, nextExportConfig]
   return plugins.reduce((acc, next) => next(acc), {
     reactStrictMode: true,
-    output: 'export',
     pageExtensions: ['ts', 'tsx', 'js', 'jsx', 'md', 'mdx'],
     eslint: {
       dirs: ['app', 'components', 'layouts', 'scripts'],
     },
-    // basePath: '/coffee-meet.github.io',
+    basePath: '/coffee-meet.github.io',
     images: {
       remotePatterns: [
         {
