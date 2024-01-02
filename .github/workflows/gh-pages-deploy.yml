@@ -14,7 +14,7 @@ jobs:
 
       - name: Install and Build 🔧
         run: |
-          npm install
+          npm install --force
           npm run build && touch ./out/.nojekyll
 
       - name: Deploy 🚀
