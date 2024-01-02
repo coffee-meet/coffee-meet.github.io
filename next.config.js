@@ -65,7 +65,7 @@ module.exports = () => {
     eslint: {
       dirs: ['app', 'components', 'layouts', 'scripts'],
     },
-    basePath: '/coffee-meet.github.io',
+    // basePath: '/coffee-meet.github.io',
     output: 'export',
     images: {
       unoptimized: true,
