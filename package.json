@@ -1,7 +1,8 @@
 {
-  "name": "tailwind-nextjs-starter-blog",
+  "name": "coffee-meet.github.io",
   "version": "2.1.0",
   "private": true,
+  "homepage": "https://coffee-meet.github.io/",
   "scripts": {
     "start": "next dev",
     "dev": "cross-env INIT_CWD=$PWD next dev",
