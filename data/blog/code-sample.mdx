@@ -1,0 +1,61 @@
+---
+title: 샘플 마크다운 문서
+date: '2024-01-01'
+tags: ['markdown', 'code', 'features', '마크다운']
+draft: false
+summary: 코드 블록 및 구문 강조 표시가 있는 마크다운 파일의 예시
+---
+
+샘플 마크다운 포스트
+
+## 인라인 코드
+
+인라인 코드 예시 `sum = parseInt(num1) + parseInt(num2)`
+
+## 코드 블록
+
+자바스크립트 코드 예시
+
+```javascript
+var num1, num2, sum
+num1 = prompt('Enter first number')
+num2 = prompt('Enter second number')
+sum = parseInt(num1) + parseInt(num2) // "+" means "add"
+alert('Sum = ' + sum) // "+" means combine into a string
+```
+
+파이썬 코드 예시 🐍
+
+```python
+def fib():
+    a, b = 0, 1
+    while True:            # First iteration:
+        yield a            # yield 0 to start with and then
+        a, b = b, a + b    # a will now be 1, and b will also be 1, (0 + 1)
+
+for index, fibonacci_number in zip(range(10), fib()):
+     print('{i:3}: {f:3}'.format(i=index, f=fibonacci_number))
+```
+
+자바 코드 예시 ☕️
+
+```java
+import java.util.Scanner;
+
+public class SumExample {
+    public static void main(String[] args) {
+        Scanner scanner = new Scanner(System.in);
+        int num1, num2, sum;
+
+        System.out.print("첫 번째 숫자를 입력하세요: ");
+        num1 = scanner.nextInt();
+
+        System.out.print("두 번째 숫자를 입력하세요: ");
+        num2 = scanner.nextInt();
+
+        sum = num1 + num2;
+        System.out.println("합계 = " + sum);
+    }
+}
+
+```
