@@ -35,7 +35,7 @@ summary: 채팅방 백업 성능 개선 및 트러블 슈팅
 
 MySQL의 Procedure로 유저, 채팅방, 채팅메세지(10,000건)의 더미데이터를 생성하여 테스트했습니다.
 
-<br>
+<br />
 
 # 첫 번째 문제 (StackOverflow)
 
@@ -70,7 +70,7 @@ ex) `DELETE FROM Person WHERE id = ? OR id = ? OR id = ? OR id = ? OR id = ?` **
 
 ![6.png](image/backup_6.png)
 
-API 응답 시간을 받는데 약 9초 소요됩니다.
+API 응답 시간이 약 9초로 너무 길게 소요됩니다.
 
 10,000건의 채팅메세지를 저장하고 기존에 있던 10,000건의 메세지를 삭제하기 때문에 소요시간이 길 수 밖에 없습니다.
 
@@ -122,7 +122,7 @@ ref: [https://stackoverflow.com/questions/27697810/why-does-hibernate-disable-in
 
 JPA에서 IDENTITY 전략이 Batch insert가 안되는 문제를 **JDBC의 batchUpdate로 해결했습니다.**
 
-<br>
+<br />
 
 ## JDBC batchUpdate 적용
 
@@ -169,7 +169,7 @@ JPA로 save 됐을 때 해당 쿼리는 DB에 적용이 될까요?
 
 JDBC batchUpdate 적용하여 9.16s -> 1.85s로 단축했습니다.
 
-<br>
+<br />
 
 아래는 각각 5회씩 테스트 한 결과입니다.
 
@@ -197,7 +197,7 @@ JDBC batchUpdate 적용하여 9.16s -> 1.85s로 단축했습니다.
 
 10,000개 기준 batch size 1,000개를 기점으로 시간이 늘어나는 것을 확인했고 batch size를 1,000개로 고정했습니다.
 
-<br>
+<br />
 
 ## 추가적인 JDBC batchUpate 사용 시 주의점
 
