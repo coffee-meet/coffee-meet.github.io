@@ -13,7 +13,7 @@ summary: 채팅방 백업 성능 개선 및 트러블 슈팅
 
 아래는 간략하게 표현한 ERD 입니다.
 
-![0.png](image/backup_0.png)
+![0.png](images/chatroom-backup-performance/backup_0.png)
 
 **chatting_rooms**은 **chatting_room_histories**, **user_chatting_room_histories** 로 백업됩니다.
 
@@ -21,9 +21,9 @@ summary: 채팅방 백업 성능 개선 및 트러블 슈팅
 
 아래는 개선 전 백업 Service 코드입니다.
 
-![1.png](image/backup_1.png)
+![1.png](images/chatroom-backup-performance/backup_1.png)
 
-![2.png](image/backup_2.png)
+![2.png](images/chatroom-backup-performance/backup_2.png)
 
 1. 채팅방에 할당된 모든 채팅메세지를 가져옵니다.
 2. backUpChattingRoom()
@@ -40,7 +40,7 @@ MySQL의 Procedure로 유저, 채팅방, 채팅메세지(10,000건)의 더미데
 
 # 첫 번째 문제 (StackOverflow)
 
-![3.png](image/backup_3.png)
+![3.png](images/chatroom-backup-performance/backup_3.png)
 
 채팅방 퇴장 API를 호출한 결과 StackOverflow가 발생했습니다.
 
@@ -48,7 +48,7 @@ MySQL의 Procedure로 유저, 채팅방, 채팅메세지(10,000건)의 더미데
 
 디버깅 해본 결과 `deleteAllInBatch`에서 해당 에러가 발생한 걸 확인했습니다.
 
-![4.png](image/backup_4.png)
+![4.png](images/chatroom-backup-performance/backup_4.png)
 
 이미지 왼쪽 Threads & Variables를 보시면 `accept`와 `visitOrPredicate`가 계속 반복해서 stack에 쌓이는 것이 확인됩니다.
 
@@ -60,7 +60,7 @@ ex) `DELETE FROM Person WHERE id = ? OR id = ? OR id = ? OR id = ? OR id = ?` **
 
 덩달아 findAll 을 할 때 채팅메세지가 너무 많고 여러 요청이 한 번에 들어왔을 때, 혹시 모를 OutOfMemory를 대비해서 고정된 size의 메세지를 가져오도록 변경했습니다.
 
-![5.png](image/backup_5.png)
+![5.png](images/chatroom-backup-performance/backup_5.png)
 
 1. 고정된 배치 사이즈만큼 ChattingMessage를 가져온다.
 2. ChattingMessageHistory를 생성한다.
@@ -69,7 +69,7 @@ ex) `DELETE FROM Person WHERE id = ? OR id = ? OR id = ? OR id = ? OR id = ?` **
 
 # 두 번째 문제 (너무 긴 응답 시간)
 
-![6.png](image/backup_6.png)
+![6.png](images/chatroom-backup-performance/backup_6.png)
 
 API 응답 시간이 약 9초로 길게 소요됩니다.
 
@@ -129,18 +129,18 @@ JPA에서 IDENTITY 전략이 Batch insert가 안되는 문제를 **JDBC의 batch
 
 ChattingMessageHistoryJdbcRepository 인터페이스 정의
 
-![7.png](image/backup_7.png)
+![7.png](images/chatroom-backup-performance/backup_7.png)
 
 ChattingMessageHistoryRepositoryImpl 구현체 정의
 
-![8.png](image/backup_8.png)
+![8.png](images/chatroom-backup-performance/backup_8.png)
 위 코드 실행 중 외래키 제약조건으로 인한 문제가 발생했습니다.
 
-![9.png](image/backup_9.png)
+![9.png](images/chatroom-backup-performance/backup_9.png)
 
 저희의 구조는 ChattingMessageHistory 가 ChattingRoomHistory의 아이디를 외래키 제약조건으로 가지고 있습니다.
 
-![10.png](image/backup_10.png)
+![10.png](images/chatroom-backup-performance/backup_10.png)
 
 먼저 `backUpChattingRoom`에서 ChattingRoomHistory을 저장합니다.
 
@@ -148,7 +148,7 @@ ChattingMessageHistoryRepositoryImpl 구현체 정의
 
 ChattingRoomHistory 생성 로직을 보겠습니다.
 
-![11.png](image/backup_11.png)
+![11.png](images/chatroom-backup-performance/backup_11.png)
 
 JPA로 save 됐을 때 해당 쿼리는 DB에 적용이 될까요?
 
@@ -160,11 +160,11 @@ JPA로 save 됐을 때 해당 쿼리는 DB에 적용이 될까요?
 
 위의 코드에서 `save` 를 `saveAndFlush`로 변경하게 되면 쓰기 지연 저장소를 비우고 DB에 바로 적용되어 예외 없이 정상 작동합니다.
 
-![12.png](image/backup_12.png)
+![12.png](images/chatroom-backup-performance/backup_12.png)
 
 ### 최종 지연 시간
 
-![13.png](image/backup_13.png)
+![13.png](images/chatroom-backup-performance/backup_13.png)
 
 JDBC batchUpdate 적용하여 9.16s -> 1.85s로 단축했습니다.
 
