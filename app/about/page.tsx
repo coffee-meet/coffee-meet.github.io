@@ -10,7 +10,7 @@ export default function Page() {
   return (
     <>
       <h1 className="text-2xl font-extrabold leading-9 tracking-tight text-gray-900 sm:text-2xl sm:leading-10 md:text-3xl md:leading-14 dark:text-gray-100">
-        팀 콰또즈 멤버들
+        팀 까또즈 멤버들
       </h1>
       {allAuthors.map((author) => (
         <>
