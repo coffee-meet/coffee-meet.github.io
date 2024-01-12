@@ -3,7 +3,7 @@ const siteMetadata = {
   title: 'CoffeeMeet Blog',
   author: 'Team Quartoz',
   headerTitle: 'CoffeeMeet Blog',
-  description: '꽈또즈 팀의 커피밋 프로젝트 블로그입니다.',
+  description: '까또즈 팀의 커피밋 프로젝트 블로그입니다.',
   language: 'ko-KR',
   theme: 'system', // system, dark or light
   siteUrl: 'https://coffee-meet.github.io',
