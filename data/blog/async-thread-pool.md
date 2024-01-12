@@ -1,0 +1,162 @@
+# 커피밋 비동기 레츠 고 - Thread Pool 설정
+
+작성일시: 2024년 1월 12일 오후 3:41
+블로그 업로드: 업로드전
+
+Thread가 뭘까?, Thread Pool이 뭘까? 왜 필요하고 있다면 어떤 점이 좋은지?
+
+비동기를 위한 Thread Pool을 설정하기 위해 Thread Pool에 관하여 학습한 포스팅입니다.
+
+# 일단 쓰레드란?
+
+일단 쓰레드는 소프트웨어 쓰레드와 하드웨어 쓰레드로 나뉩니다.
+
+소프트웨어 쓰레드는 프로세서에서 실행되는 작업의 단위입니다.
+
+하드웨어 쓰레드는 소프트웨어 쓰레드에서 OS의 스케쥴러에 의해 분할되어 할당된 작업 단위입니다. 기존에 한 개의 코어에서는 하나의 작업만 처리할 수 있었지만, 인텔의 하이퍼쓰레딩, AMD의 SMT로 인해 하드웨어 쓰레드 개념이 생겨났습니다. 이 할당된 하드웨어 쓰레드를 처리하는 것이 CPU 코어입니다.
+
+## 소프트웨어 쓰레드 할당
+
+첫 번째 사진는 실제 Java의 `newFixedThreadPool`코드입니다. `ThreadPoolExecutor`를 실행하고 두 번째 사진은 `ThreadPoolExecutor`의 생성자이고 `corePoolSize`를 Integer의 MAX_VALUE까지 생성할 수 있습니다. Integer.MAX_VALUE라면 21억개 임으로 무한대라고 볼 수 있습니다.
+
+![0.png](images/async-thread-pool/0.png)
+
+![1.png](images/async-thread-pool/1.png)
+
+## 하드웨어 쓰레드
+
+하지만 CPU의 쓰레드 수는 어떤 CPU냐에 따라 고정되어 있습니다.
+
+![2.png](images/async-thread-pool/2.png)
+
+두 가지 개념의 Thread가 있다는 걸 알 수 있습니다.
+
+# Thread Pool
+
+단일 쓰레드를 생성하면서 사용하면 될텐데 왜 Thread Pool을 굳이 사용하는 걸까요?
+
+## Thread와 Runnable
+
+![3.png](images/async-thread-pool/3.png)
+
+![4.png](images/async-thread-pool/4.png)
+
+## Thread Pool 이래서 필요합니다!
+
+먼저, 요청마다 쓰레드를 생성하면 **쓰레드를 생성에 소요되는 시간** 때문에 처리가 오래걸리게 된다. 쓰레드 생성에는 커널이 개입이 되어야 하는데 이게 일반적인 CPU 연산보다 많은 시간이 소요됩니다.
+
+만약, 요청이 막 밀려와서 처리속도보다 요청이 더 많아진다면 아래와 같은 상황이 일어납니다.
+
+### **시스템 불능**
+
+1. 쓰레드가 계속 생성됨
+2. 많이 생성된 쓰레드 때문에 빈번한 **컨텍스트 스위칭** 발생
+3. 빈번한 컨텍스트 스위칭 때문에 CPU 오버헤드 발생
+4. 과부하로 시스템 불능 상태
+
+### 메**모리 부족**
+
+1. 쓰레드가 계속 생성됨
+2. 쓰레드 생성마다 메모리가 할당, 메모리 사용 증가
+3. OutOfMemory 발생
+
+## Thread Pool 동작 방식
+
+!![5.png](images/async-thread-pool/5.png)
+
+1. 작업 요청 (Task Submitters)
+2. Queue에 Task 적제
+3. Thread Pool에 Thread 중 놀고 있는 Thread가 있다면 Task 할당
+4. Task 처리 끝나면 다시 Thread Pool에 복귀 1번 반복
+
+## Spring 에서 Thread Pool 생성 방식
+
+맨 위에서 언급한 Java의 `newFixedThreadPool`로 생성하는 방법도 있지만, 코드 작성에 매우 번거롭습니다. Spring에서 깔끔하게 비동기를 위한 Thread Pool을 생성하는 방법이 있습니다.
+
+`AsyncConfigurer`을 구현하고 `getAsyncExecutor`에서 설정하면 됩니다.
+
+![6.png](images/async-thread-pool/6.png)
+
+newFixedThreadPool과 위의 방법이 결국은 동일하게`ThreadPoolExecutor`를 생성합니다.
+
+각 상태에 관해 설명하겠습니다.
+
+- CorePoolSize: 고정적으로 유지하는 Thread의 개수입니다.
+- MaxPoolSize: Core Pool의 Thread가 실행 중이면 Thread를 생성할 수 있는데 Core Pool + 생성 가능한 Thread 양입니다.
+- QueueCapacity: Queue 사이즈입니다. Queue 사이즈가 크면 클 수록 좋을 것 같지만 Queue 사이즈가 너무 크다면 위에서 언급한 **메모리 부족** 문제가 동일하게 발생할 수 있습니다. 초과되면 과감하게 요청을 버리는 것이 시스템에 문제가 생기지 않을 수 있습니다.
+- keepAliveSeconds: CorePool을 모두 사용해서 추가로 Thread를 생성하고 작업을 완료했을 때 해당 Thread가 제거되기까지의 시간
+- initialize: Thread pool 생성
+
+# 그럼 Thread Pool은 몇 개를 설정하는 것이 좋을까요?
+
+## Task의 특성과 코어 수
+
+일단 Task의 성격이나 CPU 코어에 따라 설정하는 것이 좋습니다.
+
+만약 테스크가 IO bound가 높다면 IDLE 상태에 있는 Thread가 많기 때문에 코어 개수보다 꽤 많은 Thread를 생성 하는 것이 좋습니다.
+
+만약 테스크가 CPU bound가 높다면 코어 개수 만큼 혹은 그 보다 몇 개 더 많게 설정해주면 좋습니다.
+
+이유는 생략하겠습니다 IO bound와 CPU bound의 개념을 숙지하면 이해하실 수 있습니다.
+
+커피밋에서 비동기로 처리할 것들은 Push 알림, 이메일 전송 등이 있는데, IO bound가 높은 task들이 대부분입니다. 따라서 Thread Pool의 개수가 코어 수에 비례해서 높아야 겠습니다.
+
+## Little’s Law
+
+![7.png](images/async-thread-pool/7.png)
+
+> _In [queueing theory](https://en.wikipedia.org/wiki/Queueing_theory), a discipline within the mathematical [theory of probability](https://en.wikipedia.org/wiki/Probability_theory), **Little’s result**, **theorem**, **lemma**, **law**, or **formula** is a theorem by [John Little](<https://en.wikipedia.org/wiki/John_Little_(academic)>) which states that the long-term average number L of customers in a [stationary](https://en.wikipedia.org/wiki/Stationary_process) system is equal to the long-term average effective arrival rate λ multiplied by the average time W that a customer spends in the system\_
+
+스타벅스에 1시간 동안 60명의 손님이 방문했다. 고객에게 커피를 서빙하는 평균은 3분이다.
+
+그렇다면 특정 1분 간 매장에 있는 손님 수는? ex) 9:30 ~ 9:31 동안 있던 손님은?
+
+특정 1분 간 매장에 있는 손님 수 = 분당 고객 평균 방문 수 \* 고객 당 매장에 머무르는 시간
+
+_L = λW_
+
+분당 고객 평균 방문 수(_λ_): 60 / 1시간 = 1분당 1명 방문
+
+고객 당 매장에 머무르는 시간(_W_): 3분
+
+특정 1분 간 매장에 있는 손님 수(_L_) = 3명
+
+이걸 어플리케이션 시스템으로 치환한다면?
+
+시스템 내부에 돌아가고 있는 작업 (Thread 수)
+
+= 평균 초당 요청 수(Requst Per Second) \* 평균 요청 처리 시간 (Latency)
+
+## 실제 적절한 값은 운영해보고 데이터에 의해 설정하는 것이 적절하다.
+
+하지만 현재 서비스가 운영되지 않고 현재 액티브한 유저가 없습니다. 그래서 기대값으로 설정해보겠습니다.
+
+|      | Push 알림 | Email  |
+| ---- | --------- | ------ |
+| 1회  | 758ms     | 5.29s  |
+| 2회  | 301ms     | 4.16s  |
+| 3회  | 195ms     | 4.39s  |
+| 4회  | 185ms     | 4.71s  |
+| 5회  | 190ms     | 4.25s  |
+| 6회  | 182ms     | 4.42s  |
+| 7회  | 378ms     | 3.69s  |
+| 8회  | 292ms     | 4.41s  |
+| 9회  | 298ms     | 3.58s  |
+| 10회 | 396ms     | 3.72s  |
+| 평균 | 317.5ms   | 4262ms |
+
+주로 비동기 처리될 것의 평균 요청 처리 시간을 측정했습니다.
+
+채팅 서비스 특성 상 일반적으로 Push 알림의 비율이 높을 것으로 예상됩니다.
+
+따라서 9(Push) : 1(Email)로 측정한 결과 **평균 latency는 711.95ms** 입니다.
+
+평균 초당 요청 수는 5로 하겠습니다.
+
+5 \* 0.71195 = 3.55975로 적절한 쓰레드 풀은 약 4개 정도로 생각됩니다.
+
+최종적으로IO bound가 크기 때문에 작업들이 대부분이기 때문에 **10개의 쓰레드 풀**을 생성했습니다.
+
+부족한 부분이 많은 Thread Pool 설정 방법이었습니다.
+
+실제 데이터로 하는 것이 베스트 지만, 어쩔 수 없이 대략적인 기대값으로 설정했습니다.
